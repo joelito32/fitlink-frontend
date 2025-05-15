@@ -6,5 +6,5 @@ export const metadata = {
 }
 
 export default function AuthPage() {
-  return <div className="w-[80%] h-[80%]"><AuthSlider /></div>
+  return <AuthSlider />
 }
