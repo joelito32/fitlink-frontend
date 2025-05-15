@@ -10,7 +10,7 @@ export default function AuthSlider() {
   const togglePanel = () => setIsRegisterActive(prev => !prev)
 
   return (
-    <div className="relative w-[80%] h-[80%] bg-white rounded-xl shadow-lg overflow-hidden border-2 border-black">
+    <div className="relative w-[80%] h-[80%] bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Mancuernas fijas */}
       <div className="absolute top-4 left-4 text-[#1F7D53] text-4xl z-10"><FaDumbbell /></div>
       <div className="absolute top-4 right-4 text-[#1F7D53] text-4xl z-10"><FaDumbbell /></div>
