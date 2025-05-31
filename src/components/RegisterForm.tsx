@@ -39,18 +39,31 @@ export default function FormRegister() {
           return
         }
         const fieldErrors: typeof errors = {}
-        const msg = data.message?.toString().toLowerCase() || ''
+        const msg = data.message.toLowerCase()
         if (msg.includes('email')) fieldErrors.email = true
         else if (msg.includes('usuario')) fieldErrors.username = true
         else if (msg.includes('repetir') || msg.includes('confirm')) fieldErrors.confirmPassword = true
         else fieldErrors.password = true
 
         setErrors(fieldErrors)
-        setErrorMsg(data.message || 'Error desconocido')
+        setErrorMsg(data.message)
         return
       }
 
-      router.push('/inicio')
+      const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: username, password }),
+      })
+      const loginData = await loginRes.json()
+
+      if (!loginRes.ok) {
+        setErrorMsg(loginData.message || 'Error iniciando sesión')
+        return
+      }
+
+      localStorage.setItem('token', loginData.token)
+      router.push('/complete-profile')
     } catch {
       setErrorMsg('No se pudo conectar con el servidor')
       setErrors({ email: true })

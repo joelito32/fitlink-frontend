@@ -25,6 +25,7 @@ export default function FormLogin() {
         body: JSON.stringify({ identifier, password }),
       })
       const data = await res.json()
+      
       if (!res.ok) {
         if (res.status >= 500 || data.message.toLowerCase().includes('interno')) {
           setErrorMsg(data.message || 'Error interno del servidor')
@@ -43,7 +44,20 @@ export default function FormLogin() {
       }
 
       localStorage.setItem('token', data.token)
-      router.push('/inicio')
+
+      const profileRes = await fetch(`${API_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${data.token}` }
+      })
+      const profile = await profileRes.json()
+
+      const hasAny =
+        Boolean(profile.name) ||
+        Boolean(profile.birthdate) ||
+        Boolean(profile.bio) ||
+        Boolean(profile.profilePic) ||
+        profile.weight != null
+      
+      router.push(hasAny ? '/inicio' : '/complete-profile')
     } catch {
       setErrorMsg('No se pudo conectar con el servidor')
       setErrors({ identifier: true })

@@ -1,5 +1,5 @@
 // app/auth/page.tsx
-import AuthSlider from "@/src/components/AuthSlider"
+import AuthSlider from "@/components/AuthSlider"
 
 export const metadata = {
   title: 'Autenticación',
