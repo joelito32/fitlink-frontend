@@ -1,32 +1,51 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { IoClose, IoAdd } from "react-icons/io5";
 import ExerciseCard from "./ExerciseCard";
+import { fetchExercises } from "../../lib/api";
+import MenuEjercicios from "./MenuEjercicios";
 
 interface CrearRutinaProps {
     onClose: () => void
 }
-
-const ejerciciosMock = ['Sentadillas', 'Press banca', 'Peso muerto', 'Dominadas', 'Remo con barra', 'Fondos']
 
 export default function CrearRutina({ onClose }: CrearRutinaProps) {
     const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
     const [titulo, setTitulo] = useState('')
     const [descripcion, setDescripcion] = useState('')
     const [mostrarEjercicios, setMostrarEjercicios] = useState(false)
-    const [ejercicios, setEjercicios] = useState<string[]>([])
+    const [ejercicios, setEjercicios] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [selectedExercises, setSelectedExercises] = useState<any[]>([])
+
+    useEffect(() => {
+        fetchExercises()
+            .then(data => {
+                console.log("Total ejercicios cargados:", data.length); // debería decir 1300+
+                setEjercicios(data);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false))
+    }, [])
 
     const confirmarCerrar = () => {
         setMostrarConfirmacion(false)
         onClose()
     }
 
-    const toggleEjercicio = (ejercicio: string) => {
-        setEjercicios(prev =>
-            prev.includes(ejercicio) ? prev.filter(e => e !== ejercicio) : [...prev, ejercicio]
-        )
+    const agregarEjercicio = (ejercicio: any) => {
+        if (!selectedExercises.find(e => e.id === ejercicio.id)) {
+            setSelectedExercises(prev => [...prev, ejercicio]);
+        }
+        setMostrarEjercicios(false);
     }
+
+    const eliminarEjercicio = (id: string) => {
+        setSelectedExercises(prev => prev.filter(e => e.id !== id));
+    }
+
+    if (loading) return <p>Cargando ejercicios...</p>;
 
     return (
         <div className="text-white">
@@ -61,21 +80,35 @@ export default function CrearRutina({ onClose }: CrearRutinaProps) {
                 </div>
                 <div>
                     <h3 className="text-white font-semibold mb-2">Añadir ejercicios</h3>
-                    <div className="flex gap-2 flex-col">
-                        {ejercicios.map((ejercicio, i) => (
-                            <div key={i} className="px-3 py-1 rounded bg-[#1F7D53] text-white text-sm">
-                                <ExerciseCard />
+                    <div className="flex flex-col gap-3">
+                        {selectedExercises.map((exercise) => (
+                            <div key={exercise.id} className="px-3 py-1 rounded bg-[#1F7D53] text-white text-sm relative">
+                                <ExerciseCard exercise={exercise} />
+                                <button
+                                    onClick={() => eliminarEjercicio(exercise.id)}
+                                    className="absolute top-1 right-1 text-red-300 hover:text-red-500 text-xs"
+                                    type="button"
+                                >
+                                    Quitar
+                                </button>
                             </div>
                         ))}
 
-                        {/* Botón cuadrado con "+" */}
                         <button
                             type="button"
-                            onClick={() => setMostrarEjercicios(true)}
+                            onClick={() => setMostrarEjercicios(!mostrarEjercicios)}
                             className="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded text-white text-xl"
                         >
                             <IoAdd />
                         </button>
+
+                        {mostrarEjercicios && (
+                            <MenuEjercicios 
+                                ejercicios={ejercicios}
+                                onSeleccionar={agregarEjercicio}
+                                onCerrar={() => setMostrarEjercicios(false)}
+                            />
+                        )}
                     </div>
                 </div>
             </form>
@@ -96,42 +129,6 @@ export default function CrearRutina({ onClose }: CrearRutinaProps) {
                                 className="bg-red-500 hover:bg-red-400 text-white px-4 py-2 rounded"
                             >
                                 Salir
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {mostrarEjercicios && (
-                <div className="fixed inset-0 backdrop-blur-sm bg-black/40 flex justify-center items-center z-50">
-                    <div className="bg-gray-900 p-6 rounded-lg border border-gray-700 w-96 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between mb-4">
-                        <h3 className="text-lg font-bold text-white ">Selecciona ejercicios</h3>
-                        <button
-                            onClick={() => setMostrarEjercicios(false)}
-                            className="text-xl text-white hover:text-[#1F7D53]"
-                            aria-label="Cerrar"
-                        >
-                            <IoClose size={30} />
-                        </button>
-                        </div>
-                        <ul className="space-y-2">
-                            {ejerciciosMock.map(ejercicio => (
-                                <li
-                                    key={ejercicio}
-                                    className={`p-2 rounded cursor-pointer ${ejercicios.includes(ejercicio) ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-                                    onClick={() => toggleEjercicio(ejercicio)}
-                                >
-                                    {ejercicio}
-                                </li>
-                            ))}
-                        </ul>
-                        <div className="flex justify-end mt-4">
-                            <button
-                                onClick={() => setMostrarEjercicios(false)}
-                                className="bg-[#1F7D53] hover:bg-green-700 text-white px-4 py-2 rounded"
-                            >
-                                Confirmar
                             </button>
                         </div>
                     </div>

@@ -11,7 +11,3 @@ input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
 }
-
-body {
-  overflow-y: hidden;
-}
