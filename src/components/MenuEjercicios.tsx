@@ -1,127 +1,121 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useEffect, useState } from 'react';
+import ExerciseCard from './ExerciseCard';
 
-interface MenuEjerciciosProps {
-    ejercicios: any[];
-    onSeleccionar: (ejercicio: any) => void;
-    onCerrar: () => void;
+interface Props {
+  onClose: () => void;
+  onSelectExercise: (exercise: Exercise) => void;
 }
 
-const MenuEjercicios = ({ ejercicios, onSeleccionar, onCerrar }: MenuEjerciciosProps) => {
-    const [busqueda, setBusqueda] = useState('');
-    const [grupo, setGrupo] = useState('');
-    const [pagina, setPagina] = useState(1);
-    const ejerciciosPorPagina = 10;
+interface Exercise {
+  id: string;
+  name: string;
+  target: string;
+  secondaryMuscles: string[];
+  equipment: string;
+  bodyPart: string;
+}
 
-    const gruposMusculares = useMemo(() => {
-        const grupos = [...new Set(ejercicios.map(e => e.bodyPart))];
-        return grupos.sort();
-    }, [ejercicios]);
+const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [targets, setTargets] = useState<string[]>([]);
+  const [target, setTarget] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-    const ejerciciosFiltrados = useMemo(() => {
-        let filtrados = ejercicios;
+    const fetchExercises = async () => {
+        const params = new URLSearchParams({ page: page.toString() });
+        if (target) params.append('target', target);
+        if (search) params.append('q', search);
 
-        if (grupo) {
-            filtrados = filtrados.filter(e => e.bodyPart === grupo);
-        }
+        const endpoint = search ? '/api/exercises/search' : '/api/exercises';
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}?${params.toString()}`);
+        const data = await res.json();
+        setExercises(data.data);
+        setTotalPages(data.totalPages);
+    };
 
-        if (busqueda.trim() !== '') {
-            filtrados = filtrados.filter(e =>
-                e.name.toLowerCase().includes(busqueda.toLowerCase())
-            );
-        }
+  const fetchTargets = async () => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/targets`);
+    const data = await res.json();
+    setTargets(data);
+  };
 
-        return filtrados.sort((a, b) => a.name.localeCompare(b.name));
-    }, [ejercicios, grupo, busqueda]);
+  useEffect(() => {
+    fetchTargets();
+  }, []);
 
-    const totalPaginas = Math.max(1, Math.ceil(ejerciciosFiltrados.length / ejerciciosPorPagina));
+  useEffect(() => {
+    fetchExercises();
+  }, [page, target, search]);
 
-    useEffect(() => {
-        // Si cambian filtros y estamos en una página fuera del rango, regresamos a la primera
-        if (pagina > totalPaginas) {
-            setPagina(1);
-        }
-    }, [pagina, totalPaginas]);
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center text-black">
+      <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl p-6 shadow-xl overflow-y-auto relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl font-bold"
+        >
+          ×
+        </button>
+        <h2 className="text-2xl font-bold mb-6 text-center">Escoge un ejercicio</h2>
 
-    const ejerciciosPagina = ejerciciosFiltrados.slice(
-        (pagina - 1) * ejerciciosPorPagina,
-        pagina * ejerciciosPorPagina
-    );
+        <input
+          type="text"
+          placeholder="Buscar ejercicios..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="w-full border px-4 py-2 rounded mb-4"
+        />
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex justify-center items-start pt-20">
-            <div className="bg-gray-900 text-white rounded-lg p-6 w-full max-w-xl shadow-lg">
-                <div className="flex justify-between mb-4">
-                    <h2 className="text-xl font-bold">Buscar ejercicios</h2>
-                    <button onClick={onCerrar} className="text-red-400 hover:text-red-600">Cerrar</button>
-                </div>
+        <select
+          value={target}
+          onChange={(e) => {
+            setTarget(e.target.value);
+            setPage(1);
+          }}
+          className="w-full border px-4 py-2 rounded mb-6"
+        >
+          <option value="">Todos los objetivos</option>
+          {targets.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
 
-                <input
-                    type="text"
-                    placeholder="Buscar por nombre..."
-                    className="w-full mb-4 p-2 rounded bg-gray-800 border border-gray-600 text-white"
-                    value={busqueda}
-                    onChange={(e) => {
-                        setBusqueda(e.target.value);
-                        setPagina(1);
-                    }}
-                />
-
-                <select
-                    className="w-full mb-4 p-2 rounded bg-gray-800 border border-gray-600 text-white"
-                    value={grupo}
-                    onChange={(e) => {
-                        setGrupo(e.target.value);
-                        setPagina(1);
-                    }}
-                >
-                    <option value="">Todos los grupos musculares</option>
-                    {gruposMusculares.map((g) => (
-                        <option key={g} value={g}>{g}</option>
-                    ))}
-                </select>
-                
-                <p className="text-sm text-gray-400 mb-2">
-                    {ejerciciosFiltrados.length} ejercicios encontrados
-                </p>
-                
-                <ul className="max-h-64 overflow-y-auto space-y-2 mb-4">
-                    {ejerciciosPagina.map((ej) => (
-                        <li key={ej.id}>
-                            <button
-                                className="w-full text-left hover:underline text-white"
-                                onClick={() => onSeleccionar(ej)}
-                            >
-                                {ej.name}
-                            </button>
-                        </li>
-                    ))}
-                    {ejerciciosPagina.length === 0 && (
-                        <li className="text-gray-400 text-sm">No se encontraron ejercicios</li>
-                    )}
-                </ul>
-                
-                <div className="flex justify-between items-center text-sm mt-2">
-                    <button
-                        type="button"
-                        disabled={pagina === 1}
-                        onClick={() => setPagina(p => p - 1)}
-                        className="disabled:text-gray-600 hover:underline"
-                    >
-                        Anterior
-                    </button>
-                    <span>Página {pagina} de {totalPaginas}</span>
-                    <button
-                        type="button"
-                        disabled={pagina === totalPaginas}
-                        onClick={() => setPagina(p => p + 1)}
-                        className="disabled:text-gray-600 hover:underline"
-                    >
-                        Siguiente
-                    </button>
-                </div>
+        <div className="flex flex-col gap-4">
+          {exercises.map((exercise) => (
+            <div key={exercise.id} className="cursor-pointer" onClick={() => {
+              onSelectExercise(exercise);
+              onClose();
+            }}>
+              <ExerciseCard {...exercise} />
             </div>
+          ))}
         </div>
-    );
+
+        <div className="flex justify-between items-center mt-6">
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+            className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span>Página {page} de {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page >= totalPages}
+            className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default MenuEjercicios;
