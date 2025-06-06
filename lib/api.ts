@@ -1,6 +1,6 @@
 // lib/api.ts
 export const fetchExercises = async (): Promise<any[]> => {
-    const response = await fetch('https://exercisedb.p.rapidapi.com/exercises', {
+    const response = await fetch('https://exercisedb.p.rapidapi.com/exercises?limit=1300&offset=0', {
         method: 'GET',
         headers: {
             'X-RapidAPI-Key': '921cb28315msh1788e9c1ca4c8f1p19a4f8jsn2c9db9c4bef9',
