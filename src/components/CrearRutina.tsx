@@ -38,41 +38,45 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
   };
 
   const handleGuardarRutina = async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      alert('No se encontró el token. Inicia sesión nuevamente.');
+      console.error("No hay token");
       return;
     }
+
+    const ejerciciosFormateados = selectedExercises.map((exercise) => ({
+      exerciseId: exercise.id,
+      sets: 3, // Puedes permitir que el usuario edite esto más adelante
+      reps: 10,
+    }));
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/routines`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           title,
           description,
-          isPublic,
-          exercises: selectedExercises.map(e => String(e.id)),
+          exercises: ejerciciosFormateados,
         }),
       });
-      const text = await res.text();
+
       if (!res.ok) {
-        console.error('Error al guardar rutina:', res.status, text);
-        alert(`Error ${res.status}: ${text}`);
-        return;
+        const errorText = await res.text();
+        throw new Error(`${res.status} ${errorText}`);
       }
 
       const data = await res.json();
       console.log('Rutina guardada:', data);
-      alert('Rutina guardada con éxito');
+      onClose();
     } catch (error) {
       console.error('Error al guardar rutina:', error);
-      alert('Error al guardar rutina');
     }
   };
+
 
 
   return (
