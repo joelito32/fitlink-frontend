@@ -9,6 +9,7 @@ interface Props {
   equipment: string;
   bodyPart: string;
   instructions: string;
+  showExpandable?: boolean;
 }
 
 const ExerciseCard: React.FC<Props> = ({
@@ -18,7 +19,8 @@ const ExerciseCard: React.FC<Props> = ({
   secondaryMuscles,
   equipment,
   bodyPart,
-  instructions
+  instructions,
+  showExpandable = false,
 }) => {
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
@@ -43,7 +45,7 @@ const ExerciseCard: React.FC<Props> = ({
   }, [id]);
 
   const parsedInstructions = instructions
-    .split(/(?:\.\s+|\n)+/)
+    .split(/(?<=[.!?])\s+/)
     .map(instr => instr.trim())
     .filter(Boolean);
 
@@ -63,12 +65,12 @@ const ExerciseCard: React.FC<Props> = ({
               <span className="text-black font-semibold">Músculo secundario:</span> {secondaryMuscles.join(', ')}
             </p>
           )}
-          <p className="text-[#1F7D53] text-sm mb-1 font-semibold">
+          <p className="text-[#1F7D53] text-sm font-semibold">
             <span className="text-black font-semibold">Equipo:</span> {equipment}
           </p>
         </div>
 
-        <div className="w-32 h-32 flex-shrink-0">
+        <div className="w-32 h-32 flex-shrink-0 mt-4 md:mt-0">
           {gifUrl ? (
             <img src={gifUrl} alt={name} className="w-full h-full object-cover rounded" />
           ) : (
@@ -79,33 +81,24 @@ const ExerciseCard: React.FC<Props> = ({
         </div>
       </div>
 
-      {parsedInstructions.length > 0 && (
+      {showExpandable && parsedInstructions.length > 0 && (
         <>
-          {!showMore && (
-            <button
-              onClick={() => setShowMore(true)}
-              className="flex items-center text-sm text-[#1F7D53] mt-4 hover:underline"
-            >
-              <IoIosArrowDown className="mr-1" />
-              Mostrar más
-            </button>
-          )}
-
-          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${showMore ? 'max-h-[500px] mt-2' : 'max-h-0'}`}>
+          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${showMore ? 'max-h-[500px]' : 'max-h-0'}`}>
             <p className="text-sm font-semibold text-black mb-2">Instrucciones:</p>
-            <ul className="list-disc ml-5 text-sm text-gray-700 w-full break-words">
+            <ul className="list-disc text-sm text-gray-700 pl-5 pr-5 break-words">
               {parsedInstructions.map((step, index) => (
                 <li key={index}>{step}</li>
               ))}
             </ul>
-            <button
-              onClick={() => setShowMore(false)}
-              className="flex items-center text-sm text-[#1F7D53] mt-2 hover:underline"
-            >
-              <IoIosArrowDown className="mr-1 rotate-180" />
-              Mostrar menos
-            </button>
           </div>
+
+          <button
+            onClick={() => setShowMore(prev => !prev)}
+            className="flex items-center text-sm text-[#1F7D53] hover:underline"
+          >
+            <IoIosArrowDown className={`mr-1 transition-transform ${showMore ? 'rotate-180' : ''}`} />
+            {showMore ? 'Mostrar menos' : 'Mostrar más'}
+          </button>
         </>
       )}
     </div>
