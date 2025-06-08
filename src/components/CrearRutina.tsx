@@ -37,10 +37,43 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
     setSelectedExercises(prev => prev.filter(e => e.id !== id));
   };
 
-  const handleGuardarRutina = () => {
-    // Aquí agregas lógica para guardar título, descripción, visibilidad y ejercicios
-    console.log({ title, description, isPublic, ejercicios: selectedExercises });
+  const handleGuardarRutina = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('No se encontró el token. Inicia sesión nuevamente.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/routines`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          isPublic,
+          exercises: selectedExercises.map(e => String(e.id)),
+        }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        console.error('Error al guardar rutina:', res.status, text);
+        alert(`Error ${res.status}: ${text}`);
+        return;
+      }
+
+      const data = await res.json();
+      console.log('Rutina guardada:', data);
+      alert('Rutina guardada con éxito');
+    } catch (error) {
+      console.error('Error al guardar rutina:', error);
+      alert('Error al guardar rutina');
+    }
   };
+
 
   return (
     <div className="relative p-4">
@@ -80,7 +113,11 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
 
         {selectedExercises.map((exercise, index) => (
           <div key={exercise.id}>
-            <ExerciseCard {...exercise} showExpandable/>
+            <ExerciseCard
+              {...exercise}
+              showExpandable
+              onRemove={() => handleRemove(exercise.id)}
+            />
 
             {index === selectedExercises.length - 1 && (
               <div
@@ -115,7 +152,7 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
 
       <div className="mt-6 flex justify-center">
         <button
-          onClick={handleGuardarRutina} // <- define esta función
+          onClick={handleGuardarRutina}
           className="bg-[#1F7D53] hover:bg-[#27391C] text-white px-6 py-2 rounded-full font-semibold transition"
         >
           Guardar rutina
@@ -134,7 +171,7 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
           onCancel={() => setMostrarConfirmacion(false)}
           onConfirm={() => {
             setMostrarConfirmacion(false);
-            onClose(); // Lógica para cerrar CrearRutina
+            onClose();
           }}
         />
       )}

@@ -67,7 +67,7 @@ const ExerciseCard: React.FC<Props> = ({
               <span className="text-black font-semibold">Músculo secundario:</span> {secondaryMuscles.join(', ')}
             </p>
           )}
-          <p className="text-[#1F7D53] text-sm font-semibold">
+          <p className="text-[#1F7D53] text-sm mb-1 font-semibold">
             <span className="text-black font-semibold">Equipo:</span> {equipment}
           </p>
         </div>
@@ -87,29 +87,31 @@ const ExerciseCard: React.FC<Props> = ({
         <>
           <div className={`transition-all duration-500 ease-in-out overflow-hidden ${showMore ? 'max-h-[500px]' : 'max-h-0'}`}>
             <p className="text-sm font-semibold text-black mb-2">Instrucciones:</p>
-            <ul className="list-disc text-sm text-gray-700 pl-5 pr-5 break-words">
+            <ul className="list-disc text-sm text-gray-700 pl-5 pr-5 break-words mb-2">
               {parsedInstructions.map((step, index) => (
                 <li key={index}>{step}</li>
               ))}
             </ul>
           </div>
-          <div>
-            <button
-              onClick={() => setShowMore(prev => !prev)}
-              className="flex items-center text-sm text-[#1F7D53] hover:underline"
-            >
-              <IoIosArrowDown className={`mr-1 transition-transform ${showMore ? 'rotate-180' : ''}`} />
-              {showMore ? 'Mostrar menos' : 'Mostrar más'}
-            </button>
-            {onRemove && (
-              <button
-                onClick={onRemove}
-                className="text-sm text-red-500 hover:underline"
-              >
-                Quitar ejercicio
-              </button>
-            )}
-          </div>
+
+<div className="flex justify-between items-center mt-1">
+  <button
+    onClick={() => setShowMore(prev => !prev)}
+    className="flex items-center text-sm text-[#1F7D53] hover:underline"
+  >
+    <IoIosArrowDown className={`mr-1 transition-transform ${showMore ? 'rotate-180' : ''}`} />
+    {showMore ? 'Mostrar menos' : 'Mostrar más'}
+  </button>
+
+  {onRemove && (
+    <button
+      onClick={onRemove}
+      className="text-sm text-red-500 hover:underline"
+    >
+      Quitar ejercicio
+    </button>
+  )}
+</div>
         </>
       )}
     </div>

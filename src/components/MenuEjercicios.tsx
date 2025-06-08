@@ -14,6 +14,7 @@ interface Exercise {
   secondaryMuscles: string[];
   equipment: string;
   bodyPart: string;
+  instructions: string;
 }
 
 const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
