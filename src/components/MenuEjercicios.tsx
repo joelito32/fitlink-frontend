@@ -51,7 +51,7 @@ const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
   }, [page, target, search]);
 
   return (
-    <div className="fixed inset-0 z-50 backdrop-blur-sm  flex items-center justify-center text-black">
+    <div className="fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center text-black">
       <div className="bg-[#27391C] w-full max-w-4xl max-h-[90vh] rounded-2xl p-6 shadow-xl overflow-y-auto relative scrollbar-hide border-2 border-[#1F7D53]">
         <button
           onClick={onClose}

@@ -4,6 +4,7 @@ import ExerciseCard from '../components/ExerciseCard';
 import { IoClose } from 'react-icons/io5';
 import { FaPlus } from 'react-icons/fa';
 import { FaInfoCircle } from 'react-icons/fa';
+import ConfirmarCerrar from './ConfirmarCerrar';
 
 interface Exercise {
   id: string;
@@ -24,6 +25,7 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
 
   const handleSelectExercise = (exercise: Exercise) => {
     if (!selectedExercises.some(e => e.id === exercise.id)) {
@@ -39,7 +41,7 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
   return (
     <div className="relative p-4">
       <button
-        onClick={onClose}
+        onClick={() => setMostrarConfirmacion(true)}
         className="absolute top-4 right-4 text-gray-500 hover:text-[#1F7D53] text-2xl font-bold"
       >
         <IoClose size={30}/>
@@ -75,13 +77,13 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
         {selectedExercises.map((exercise, index) => (
           <div key={exercise.id}>
             <ExerciseCard {...exercise} />
-        
+
             {index === selectedExercises.length - 1 && (
               <div
                 onClick={() => setMenuVisible(true)}
-                className="w-14 h-14 flex items-center justify-center border-2 border-dashed border-[#1F7D53] rounded cursor-pointer text-[#1F7D53] hover:bg-[#27391C] mt-6"
+                className="w-14 h-14 flex items-center justify-center border-2 border-dashed border-[#1F7D53] rounded cursor-pointer text-[#1F7D53] hover:bg-[#27391C] mt-4"
               >
-                <FaPlus />
+                <FaPlus className="text-xl" />
               </div>
             )}
           </div>
@@ -120,6 +122,16 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
         <MenuEjercicios
           onClose={() => setMenuVisible(false)}
           onSelectExercise={handleSelectExercise}
+        />
+      )}
+
+      {mostrarConfirmacion && (
+        <ConfirmarCerrar
+          onCancel={() => setMostrarConfirmacion(false)}
+          onConfirm={() => {
+            setMostrarConfirmacion(false);
+            onClose(); // Lógica para cerrar CrearRutina
+          }}
         />
       )}
     </div>
