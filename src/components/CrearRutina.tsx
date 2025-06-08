@@ -3,7 +3,6 @@ import MenuEjercicios from '../components/MenuEjercicios';
 import ExerciseCard from '../components/ExerciseCard';
 import { IoClose } from 'react-icons/io5';
 import { FaPlus } from 'react-icons/fa';
-import { FaInfoCircle } from 'react-icons/fa';
 import ConfirmarCerrar from './ConfirmarCerrar';
 
 interface Exercise {
@@ -13,6 +12,7 @@ interface Exercise {
   secondaryMuscles: string[];
   equipment: string;
   bodyPart: string;
+
 }
 
 interface Props {
@@ -139,3 +139,5 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
 };
 
 export default CrearRutina;
+
+
