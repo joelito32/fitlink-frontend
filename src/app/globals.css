@@ -11,3 +11,12 @@ input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
 }
+
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}

@@ -50,15 +50,15 @@ const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
   }, [page, target, search]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center text-black">
-      <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl p-6 shadow-xl overflow-y-auto relative">
+    <div className="fixed inset-0 z-50 backdrop-blur-sm  flex items-center justify-center text-black">
+      <div className="bg-[#27391C] w-full max-w-4xl max-h-[90vh] rounded-2xl p-6 shadow-xl overflow-y-auto relative scrollbar-hide border-2 border-[#1F7D53]">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl font-bold"
         >
           ×
         </button>
-        <h2 className="text-2xl font-bold mb-6 text-center">Escoge un ejercicio</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-[#1F7D53]">Escoge un ejercicio</h2>
 
         <input
           type="text"
@@ -68,7 +68,7 @@ const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
             setSearch(e.target.value);
             setPage(1);
           }}
-          className="w-full border px-4 py-2 rounded mb-4"
+          className="w-full border px-4 py-2 rounded mb-4 bg-black text-[#1F7D53]"
         />
 
         <select
@@ -77,7 +77,7 @@ const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
             setTarget(e.target.value);
             setPage(1);
           }}
-          className="w-full border px-4 py-2 rounded mb-6"
+          className="w-full border px-4 py-2 rounded mb-6 bg-black text-[#1F7D53]"
         >
           <option value="">Todos los objetivos</option>
           {targets.map((t) => (
@@ -100,15 +100,15 @@ const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
           <button
             onClick={() => setPage((p) => Math.max(p - 1, 1))}
             disabled={page === 1}
-            className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="bg-[#1F7D53] text-white px-4 py-2 rounded disabled:opacity-50"
           >
             Anterior
           </button>
-          <span>Página {page} de {totalPages}</span>
+          <span className="text-[#1F7D53] font-bold">Página {page} de {totalPages}</span>
           <button
             onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
             disabled={page >= totalPages}
-            className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="bg-[#1F7D53] text-white px-4 py-2 rounded disabled:opacity-50"
           >
             Siguiente
           </button>
