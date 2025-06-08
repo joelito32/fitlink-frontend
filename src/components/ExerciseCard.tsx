@@ -10,6 +10,7 @@ interface Props {
   bodyPart: string;
   instructions: string;
   showExpandable?: boolean;
+  onRemove?: () => void;
 }
 
 const ExerciseCard: React.FC<Props> = ({
@@ -21,6 +22,7 @@ const ExerciseCard: React.FC<Props> = ({
   bodyPart,
   instructions,
   showExpandable = false,
+  onRemove
 }) => {
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
@@ -91,14 +93,23 @@ const ExerciseCard: React.FC<Props> = ({
               ))}
             </ul>
           </div>
-
-          <button
-            onClick={() => setShowMore(prev => !prev)}
-            className="flex items-center text-sm text-[#1F7D53] hover:underline"
-          >
-            <IoIosArrowDown className={`mr-1 transition-transform ${showMore ? 'rotate-180' : ''}`} />
-            {showMore ? 'Mostrar menos' : 'Mostrar más'}
-          </button>
+          <div>
+            <button
+              onClick={() => setShowMore(prev => !prev)}
+              className="flex items-center text-sm text-[#1F7D53] hover:underline"
+            >
+              <IoIosArrowDown className={`mr-1 transition-transform ${showMore ? 'rotate-180' : ''}`} />
+              {showMore ? 'Mostrar menos' : 'Mostrar más'}
+            </button>
+            {onRemove && (
+              <button
+                onClick={onRemove}
+                className="text-sm text-red-500 hover:underline"
+              >
+                Quitar ejercicio
+              </button>
+            )}
+          </div>
         </>
       )}
     </div>

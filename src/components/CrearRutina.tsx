@@ -12,7 +12,7 @@ interface Exercise {
   secondaryMuscles: string[];
   equipment: string;
   bodyPart: string;
-
+  instructions: string;
 }
 
 interface Props {
@@ -31,6 +31,10 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
     if (!selectedExercises.some(e => e.id === exercise.id)) {
       setSelectedExercises(prev => [...prev, exercise]);
     }
+  };
+
+  const handleRemove = (id: string) => {
+    setSelectedExercises(prev => prev.filter(e => e.id !== id));
   };
 
   const handleGuardarRutina = () => {
@@ -76,7 +80,7 @@ const CrearRutina: React.FC<Props> = ({onClose}) => {
 
         {selectedExercises.map((exercise, index) => (
           <div key={exercise.id}>
-            <ExerciseCard {...exercise} />
+            <ExerciseCard {...exercise} showExpandable/>
 
             {index === selectedExercises.length - 1 && (
               <div
