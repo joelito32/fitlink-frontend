@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ExerciseCard from './ExerciseCard';
+import { IoClose } from "react-icons/io5";
 
 interface Props {
   onClose: () => void;
@@ -54,9 +55,9 @@ const MenuEjercicios: React.FC<Props> = ({ onClose, onSelectExercise }) => {
       <div className="bg-[#27391C] w-full max-w-4xl max-h-[90vh] rounded-2xl p-6 shadow-xl overflow-y-auto relative scrollbar-hide border-2 border-[#1F7D53]">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl font-bold"
+          className="absolute top-4 right-4 text-gray-500 hover:text-[#1F7D53] text-2xl font-bold"
         >
-          ×
+          <IoClose size={30}/>
         </button>
         <h2 className="text-2xl font-bold mb-6 text-center text-[#1F7D53]">Escoge un ejercicio</h2>
 
