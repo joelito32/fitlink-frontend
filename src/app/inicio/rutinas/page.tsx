@@ -44,7 +44,7 @@ export default function RutinasPage() {
             </div>
 
             {/* Barra central */}
-            <div className="w-2/4 p-6">
+            <div className="w-2/4 px-4">
                 {modoCreacion ? (
                     <CrearRutina onClose={() => setModoCreacion(false)} />
                 ) : (
