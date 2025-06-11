@@ -68,11 +68,13 @@ export default function RoutineCard({
   }, [exercises])
 
   return (
-    <div className="relative bg-[#27391C] rounded-lg p-4 hover:shadow-lg transition-shadow">
+    <div className="relative bg-[#27391C] rounded-lg p-4 hover:shadow-lg transition-shadow  border-2 border-[#1F7D53] ">
       <div className="absolute top-3 right-3 flex items-center gap-3 text-white text-lg">
-        <button onClick={onDeleteClick} className="hover:text-red-400">
-          <FiTrash />
-        </button>
+        {onDeleteClick && (
+          <button onClick={onDeleteClick} className="hover:text-red-400">
+            <FiTrash />
+          </button>
+        )}
         {isPublic ? <FaLockOpen /> : <FaLock />}
       </div>
 
