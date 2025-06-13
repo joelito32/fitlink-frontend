@@ -8,7 +8,7 @@ import EditarRutina from '@/components/EditarRutina'
 import ConfirmarBorrar from '@/components/ConfirmarBorrar'
 
 interface RawExercise {
-  exerciseId: string
+  id: string
   name?: string
 }
 
@@ -69,7 +69,7 @@ export default function RutinasPage() {
         rutinasCrudas.map(async (rutina: any) => {
           const ejerciciosCompletos = await Promise.all(
             rutina.exercises.map(async (e: any) => {
-              const exRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.exerciseId}`, {
+              const exRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
               })
               const exData = await exRes.json()
@@ -116,7 +116,7 @@ export default function RutinasPage() {
     try {
       const ejerciciosCompletos = await Promise.all(
         rutina.exercises.map(async (e) => {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.exerciseId}`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.id}`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           const data = await res.json()

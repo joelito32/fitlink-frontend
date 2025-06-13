@@ -88,7 +88,7 @@ const ExerciseCard: React.FC<Props> = ({
             <p className="text-sm font-semibold text-black mb-2">Instrucciones:</p>
             <ul className="list-disc text-sm text-gray-700 pl-5 pr-5 break-words mb-2">
               {parsedInstructions.map((step, index) => (
-                <li key={index}>{step}</li>
+                <li key={`${index}-${step.slice(0, 10)}`}>{step}</li>
               ))}
             </ul>
           </div>

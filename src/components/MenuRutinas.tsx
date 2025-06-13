@@ -6,7 +6,7 @@ import RoutineMenu from './RoutineMenu'
 import { IoClose } from 'react-icons/io5'
 
 interface RawExercise {
-  exerciseId: string
+  id: string
   name?: string
 }
 

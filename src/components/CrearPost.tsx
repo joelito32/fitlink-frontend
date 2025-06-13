@@ -13,7 +13,7 @@ interface CrearPostProps {
 }
 
 interface RawExercise {
-  exerciseId: string
+  id: string
   name?: string
 }
 
@@ -82,7 +82,7 @@ export default function CrearPost({ onClose, onPostCreated }: CrearPostProps) {
       const enrichRoutine = async (routine: any) => {
         const ejerciciosCompletos = await Promise.all(
           routine.exercises.map(async (e: any) => {
-            const exRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.exerciseId}`, {
+            const exRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.id}`, {
               headers: { Authorization: `Bearer ${token}` }
             })
             const exData = await exRes.json()
@@ -94,7 +94,6 @@ export default function CrearPost({ onClose, onPostCreated }: CrearPostProps) {
               equipment: exData.equipment,
               bodyPart: exData.bodyPart,
               instructions: exData.instructions || '',
-              exerciseId: exData.id
             }
           })
         )

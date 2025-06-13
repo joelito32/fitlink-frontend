@@ -1,19 +1,12 @@
 'use client'
 
-interface FeedMenuProps {
+interface InicioMenuProps {
     activeTab: string
     onTabChange: (tab: string) => void
-    parentTab: 'Publicaciones' | 'Rutinas' | 'Explorar'
 }
 
-export default function FeedMenu({ activeTab, onTabChange, parentTab }: FeedMenuProps) {
-    const tabsByParent = {
-        Publicaciones: ['Publicaciones', 'Gustados', 'Guardados', 'Comentados', 'Mis publicaciones'],
-        Rutinas: ['Rutinas', 'Rutinas guardadas', 'Mis rutinas'],
-        Explorar: ['Todo', 'Publicaciones', 'Rutinas', 'Usuarios']
-    }
-
-    const tabs = tabsByParent[parentTab] || []
+export default function InicioMenu({ activeTab, onTabChange }: InicioMenuProps) {
+    const tabs = ['Publicaciones', 'Rutinas', 'Explorar']
 
     return (
         <div className="flex flex-col justify-center items-center text-white gap-3 w-full pt-4">

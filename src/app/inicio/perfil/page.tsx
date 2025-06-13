@@ -7,6 +7,7 @@ import { FiSettings } from "react-icons/fi"
 import RoutineCard from "@/components/RoutineCard"
 import ConfirmarBorrar from "@/components/ConfirmarBorrar"
 import EditarRutina from "@/components/EditarRutina"
+import PostCard from "@/components/PostCard"
 
 interface UserProfile {
     id: number
@@ -19,7 +20,7 @@ interface UserProfile {
 }
 
 interface RawExercise {
-    exerciseId: string
+    id: string
     name?: string
 }
 
@@ -55,6 +56,33 @@ interface FullExercise {
     instructions: string
 }
 
+interface Post {
+    id: number
+    author: {
+        id: number
+        username: string
+        name?: string
+        profilePic?: string
+    }
+    content: string
+    createdAt: string
+    likesCount: number
+    commentsCount: number
+    savedCount: number
+    routine?: {
+        id: number
+        title: string
+        description: string
+        isPublic: boolean
+        updatedAt: string
+        owner: {
+            id: number
+            username: string
+        }
+        exercises: { id: string, name?: string }[]
+    }
+}
+
 export default function PerfilPage() {
     const router = useRouter()
     const [menuOpen, setMenuOpen] = useState(false)
@@ -62,6 +90,8 @@ export default function PerfilPage() {
     const [profile, setProfile] = useState<UserProfile | null>(null)
     const [stats, setStats] = useState({ publicaciones: 0, rutinas: 0, seguidores: 0, seguidos: 0 })
     const [rutinas, setRutinas] = useState<Routine[]>([])
+    const [posts, setPosts] = useState<Post[]>([])
+
     const [rutinaEditando, setRutinaEditando] = useState<RoutineForEdit | null>(null)
     const [borrarRutina, setBorrarRutina] = useState<Routine | null>(null)
     const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -80,7 +110,7 @@ export default function PerfilPage() {
             routines.map(async (rutina: any) => {
                 const ejerciciosCompletos = await Promise.all(
                     rutina.exercises.map(async (e: any) => {
-                        const exRes = await fetch(`${API_URL}/api/exercises/${e.exerciseId}`, {
+                        const exRes = await fetch(`${API_URL}/api/exercises/${e.id}`, {
                             headers: { Authorization: `Bearer ${token}` }
                         })
                         const exData = await exRes.json()
@@ -138,7 +168,7 @@ export default function PerfilPage() {
                 routines.map(async (rutina: any) => {
                     const ejerciciosCompletos = await Promise.all(
                         rutina.exercises.map(async (e: any) => {
-                            const exRes = await fetch(`${API_URL}/api/exercises/${e.exerciseId}`, {
+                            const exRes = await fetch(`${API_URL}/api/exercises/${e.id}`, {
                                 headers: { Authorization: `Bearer ${token}` }
                             })
                             const exData = await exRes.json()
@@ -150,7 +180,6 @@ export default function PerfilPage() {
                                 equipment: exData.equipment,
                                 bodyPart: exData.bodyPart,
                                 instructions: exData.instructions || '',
-                                exerciseId: exData.id
                             }
                         })
                     )
@@ -165,6 +194,45 @@ export default function PerfilPage() {
         .catch(console.error)
     }, [API_URL])
 
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        if (!token) return
+
+        fetch(`${API_URL}/api/users/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+        .then(res => res.ok ? res.json() : Promise.reject(res))
+        .then(async data => {
+            const profilePic = data.profilePic?.startsWith('http') ? data.profilePic : `${API_URL}${data.profilePic}`
+            setProfile({ ...data, profilePic })
+
+            await fetchStats(data.id, token)
+
+            const postRes = await fetch(`${API_URL}/api/posts/user/${data.id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const rawPosts: Post[] = await postRes.json();
+            const enriched = await Promise.all(
+                rawPosts.map(async (post: Post) => {
+                    if (post.routine?.exercises) {
+                        post.routine.exercises = await Promise.all(
+                            post.routine.exercises.map(async (ex: { id: string }) => {
+                                const r = await fetch(`${API_URL}/api/exercises/${ex.id}`, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                });
+                                return await r.json();
+                            })
+                        );
+                    }
+                    return post;
+                })
+            );
+            return setPosts(enriched);
+        })
+    }, [])
+
+    
+
     const handleLogout = () => {
         localStorage.removeItem('token')
         router.push('/auth')
@@ -175,7 +243,7 @@ export default function PerfilPage() {
         if (!token) return
         const ejerciciosCompletos = await Promise.all(
             rutina.exercises.map(async (e) => {
-                const res = await fetch(`${API_URL}/api/exercises/${e.exerciseId}`, {
+                const res = await fetch(`${API_URL}/api/exercises/${e.id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
                 const data = await res.json()
@@ -281,7 +349,25 @@ export default function PerfilPage() {
                             <div className="w-1/4 border-r border-gray-700" />
                             <div className="w-2/4 px-4 py-4 space-y-4">
                                 {activeTab === 'Publicaciones' ? (
-                                    <p className="text-center text-gray-400">Tus publicaciones aparecerán aquí.</p>
+                                    posts.length === 0 ? (
+                                        <p className="text-center text-gray-400">No has creado ninguna publicación todavía.</p>
+                                    ) : (
+                                        posts.map((post: Post) => (
+                                            <PostCard
+                                                key={post.id}
+                                                username={post.author.username}
+                                                name={post.author.name || ''}
+                                                profilePic={post.author.profilePic || ''}
+                                                content={post.content}
+                                                createdAt={post.createdAt}
+                                                likes={post.likesCount}
+                                                comments={post.commentsCount}
+                                                saved={post.savedCount}
+                                                onDelete={() => {}}
+                                                attachedRoutine={post.routine}
+                                            />
+                                        ))
+                                    )
                                 ) : rutinas.length === 0 ? (
                                     <p className="text-center text-gray-400">No has creado ninguna rutina todavía.</p>
                                 ) : (
