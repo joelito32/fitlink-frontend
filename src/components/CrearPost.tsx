@@ -147,7 +147,7 @@ export default function CrearPost({ onClose, onPostCreated }: CrearPostProps) {
                 description={rutinaAdjunta.description}
                 isPublic={rutinaAdjunta.isPublic}
                 updatedAt={rutinaAdjunta.updatedAt}
-                owner={typeof rutinaAdjunta.owner === 'object' ? rutinaAdjunta.owner.username : rutinaAdjunta.owner}
+                owner={rutinaAdjunta.owner}
                 exercises={rutinaAdjunta.exercises}
               />
             </div>

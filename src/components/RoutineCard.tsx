@@ -7,6 +7,7 @@ import { GrEdit } from 'react-icons/gr'
 import { IoIosArrowDown } from 'react-icons/io'
 import ExerciseCard from './ExerciseCard'
 import { IoBookmark, IoBookmarkOutline } from 'react-icons/io5'
+import { useRouter } from 'next/navigation'
 
 interface Exercise {
   id: string
@@ -24,7 +25,10 @@ interface RoutineCardProps {
   description: string
   isPublic: boolean
   updatedAt: string
-  owner: string
+  owner: {
+    id: number
+    username: string
+  }
   exercises: Exercise[]
   isSaved?: boolean
   onToggleSave?: () => void
@@ -49,6 +53,7 @@ export default function RoutineCard({
 }: RoutineCardProps) {
   const [gifUrls, setGifUrls] = useState<string[]>([])
   const [mostrarDetalles, setMostrarDetalles] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchGifs = async () => {
@@ -111,9 +116,18 @@ export default function RoutineCard({
       <div className="flex items-center gap-2 mb-2  ">
         <h3 className="text-lg font-bold text-white">{title}</h3>
         <div className="flex items-center gap-2 text-sm text-gray-400">
-          <span>
-            @{owner} · {formatCreatedAt(updatedAt)}
-          </span>
+          <p
+            className="hover:underline cursor-pointer"
+            onClick={() => router.push(`/perfil/${owner.id}`)}
+          >
+            @{owner.username}
+          </p>
+          <p>
+            ·
+          </p>
+          <p>
+            {formatCreatedAt(updatedAt)}
+          </p>
           {onEditClick && (
             <button
               onClick={onEditClick}

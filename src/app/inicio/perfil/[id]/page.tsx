@@ -7,7 +7,8 @@ import PostCard from '@/components/PostCard';
 import EditarRutina from '@/components/EditarRutina';
 import ConfirmarBorrar from '@/components/ConfirmarBorrar';
 import ProfileMenu from '@/components/ProfileMenu';
-import { FiSettings } from 'react-icons/fi';
+import { IoMdClose } from 'react-icons/io';
+import ConfirmarUnfollow from '@/components/ConfirmarUnfollow';
 
 interface UserProfile {
     id: number;
@@ -27,10 +28,11 @@ export default function ProfilePage() {
     const [posts, setPosts] = useState<any[]>([]);
     const [rutinas, setRutinas] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'Publicaciones' | 'Rutinas'>('Publicaciones');
-    const [menuOpen, setMenuOpen] = useState(false);
     const [rutinaEditando, setRutinaEditando] = useState<any>(null);
     const [borrarRutina, setBorrarRutina] = useState<any>(null);
     const [stats, setStats] = useState({ publicaciones: 0, rutinas: 0, seguidores: 0, seguidos: 0 });
+    const [isFollowing, setIsFollowing] = useState(false)
+    const [mostrarConfirmarUnfollow, setMostrarConfirmarUnfollow] = useState(false)
 
     const fetchStats = async (userId: number, token: string) => {
         const [followers, following, posts, routines] = await Promise.all([
@@ -125,6 +127,60 @@ export default function ProfilePage() {
         setRutinas(data);
     };
 
+    useEffect(() => {
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        fetch(`${API_URL}/api/followers/is-following/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.ok ? res.json() : Promise.reject(res))
+            .then(data => setIsFollowing(data.isFollowing))
+            .catch(() => setIsFollowing(false));
+    }, [id, API_URL]);
+
+    const handleFollowClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        const token = localStorage.getItem('token');
+        if (!token || !profile) return;
+
+        if (isFollowing) {
+            setMostrarConfirmarUnfollow(true)
+        }  else {
+            try {
+                const res = await fetch(`${API_URL}/api/followers/follow/${id}`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setIsFollowing(true);
+                    await fetchStats(profile.id, token)
+                }
+            } catch (err) {
+                console.error('Error al seguir', err);
+            }
+        }
+    };
+
+    const handleUnfollowConfirm = async () => {
+        const token = localStorage.getItem('token');
+        if (!token || !profile) return;
+
+        try {
+            const res = await fetch(`${API_URL}/api/followers/unfollow/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setIsFollowing(false);
+                setMostrarConfirmarUnfollow(false);
+                await fetchStats(profile.id, token);
+            }
+        } catch (err) {
+            console.error('Error al dejar de seguir', err);
+        }
+    };
+
     if (!profile) return null;
 
     return (
@@ -147,26 +203,24 @@ export default function ProfilePage() {
             ) : (
                 <>
                     <div className="w-full">
-                        <div className="flex justify-between items-center mb-6 p-6">
-                            <h1 className="text-3xl font-bold">@{profile.username}</h1>
-                            <div className="relative">
+                        <div className="grid grid-cols-3 items-center mb-6 p-6">
+                            <h1 className="text-3xl font-bold justify-self-start">@{profile.username}</h1>
+                            <div className="justify-self-center">
+                                <button 
+                                    className={`px-6 py-2 rounded-xl text-base font-medium transition-colors ${isFollowing ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-[#1F7D53] text-white hover:bg-[#186345]'}`}
+                                    onClick={handleFollowClick}
+                                >
+                                    {isFollowing ? 'Dejar de seguir' : 'Seguir'}
+                                </button>
+                            </div>
+                            <div className="justify-self-end">
                                 <button
-                                    onClick={() => setMenuOpen(open => !open)}
-                                    className="text-white text-2xl p-2 rounded-full hover:bg-white/10 transition"
+                                    onClick={() => router.back()}
+                                    className=" text-white text-2xl p-2 rounded-full hover:bg-white/10 transition"
                                     aria-label="Configuración"
                                 >
-                                    <FiSettings />
+                                    <IoMdClose />
                                 </button>
-                                {menuOpen && (
-                                    <div className="absolute right-0 mt-2 w-44 bg-[#27391C] text-white rounded shadow-lg z-50">
-                                        <button onClick={() => { setMenuOpen(false); router.push('/complete-profile'); }} className="block w-full text-left px-4 py-2 hover:bg-white/10 transition">
-                                            Editar perfil
-                                        </button>
-                                        <button onClick={() => { setMenuOpen(false); localStorage.removeItem('token'); router.push('/login'); }} className="block w-full text-left px-4 py-2 hover:bg-white/10 transition">
-                                            Cerrar sesión
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         </div>
                         <div className="flex items-center justify-center mt-6 space-y-4 gap-6">
@@ -201,11 +255,12 @@ export default function ProfilePage() {
                             <div className="w-2/4 px-4 py-4 space-y-4">
                                 {activeTab === 'Publicaciones' ? (
                                     posts.length === 0 ? (
-                                        <p className="text-center text-gray-400">No has creado ninguna publicación todavía.</p>
+                                        <p className="text-center text-gray-400">El usuario no ha creado ninguna publicación todavía.</p>
                                     ) : (
                                         posts.map((post: any) => (
                                             <PostCard
                                                 key={post.id}
+                                                authorId={post.authorId}
                                                 username={post.author.username}
                                                 name={post.author.name || ''}
                                                 profilePic={post.author.profilePic || ''}
@@ -220,7 +275,7 @@ export default function ProfilePage() {
                                         ))
                                     )
                                 ) : rutinas.length === 0 ? (
-                                    <p className="text-center text-gray-400">No has creado ninguna rutina todavía.</p>
+                                    <p className="text-center text-gray-400">El usuario no ha creado ninguna rutina todavía.</p>
                                 ) : (
                                     rutinas.map((rutina: any) => (
                                         <RoutineCard
@@ -230,7 +285,7 @@ export default function ProfilePage() {
                                             description={rutina.description}
                                             isPublic={rutina.isPublic}
                                             updatedAt={rutina.updatedAt || rutina.createdAt}
-                                            owner={rutina.owner.username}
+                                            owner={rutina.owner}
                                             exercises={rutina.exercises}
                                             onEditClick={() => handleEditClick(rutina)}
                                             onDeleteClick={() => setBorrarRutina(rutina)}
@@ -247,6 +302,12 @@ export default function ProfilePage() {
                 <ConfirmarBorrar
                     onCancel={() => setBorrarRutina(null)}
                     onConfirm={() => handleDeleteRoutine(borrarRutina.id)}
+                />
+            )}
+            {mostrarConfirmarUnfollow && (
+                <ConfirmarUnfollow 
+                    onCancel={() => setMostrarConfirmarUnfollow(false)}
+                    onConfirm={handleUnfollowConfirm}
                 />
             )}
         </div>

@@ -137,10 +137,10 @@ export default function PerfilPage() {
 
     const fetchStats = async (userId: number, token: string) => {
         const [followers, following, posts, routines] = await Promise.all([
-            fetch(`${API_URL}/api/followers/followers/count`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/followers/following/count`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+            fetch(`${API_URL}/api/followers/followers/count/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+            fetch(`${API_URL}/api/followers/following/count/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
             fetch(`${API_URL}/api/posts/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/routines`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+            fetch(`${API_URL}/api/routines/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
         ])
         setStats({ publicaciones: posts.length, rutinas: routines.length, seguidores: followers.followers, seguidos: following.following })
     }
@@ -159,7 +159,7 @@ export default function PerfilPage() {
 
             await fetchStats(data.id, token)
 
-            const routinesRes = await fetch(`${API_URL}/api/routines`, {
+            const routinesRes = await fetch(`${API_URL}/api/routines/user/${data.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const routines = await routinesRes.json()
@@ -355,6 +355,7 @@ export default function PerfilPage() {
                                         posts.map((post: Post) => (
                                             <PostCard
                                                 key={post.id}
+                                                authorId={post.author.id}
                                                 username={post.author.username}
                                                 name={post.author.name || ''}
                                                 profilePic={post.author.profilePic || ''}
@@ -379,7 +380,7 @@ export default function PerfilPage() {
                                             description={rutina.description}
                                             isPublic={rutina.isPublic}
                                             updatedAt={rutina.updatedAt || rutina.createdAt}
-                                            owner={rutina.owner.username}
+                                            owner={rutina.owner}
                                             exercises={rutina.exercises}
                                             onEditClick={() => handleEditClick(rutina)}
                                             onDeleteClick={() => setBorrarRutina(rutina)}

@@ -260,6 +260,7 @@ export default function FeedPage() {
                         {activeTab === 'Publicaciones' && posts.map(post => (
                             <PostCard
                                 key={post.id}
+                                authorId={post.author.id}
                                 username={post.author.username}
                                 name={post.author.name || ''}
                                 profilePic={post.author.profilePic || ''}
@@ -280,7 +281,7 @@ export default function FeedPage() {
                                 description={routine.description}
                                 isPublic={routine.isPublic}
                                 updatedAt={routine.updatedAt}
-                                owner={routine.owner.username}
+                                owner={routine.owner}
                                 exercises={routine.exercises || []}
                                 isSaved={savedRoutineIds.includes(routine.id)}
                                 onToggleSave={() => toggleSaveRoutine(routine.id, savedRoutineIds.includes(routine.id))}
@@ -308,28 +309,33 @@ export default function FeedPage() {
 
                                 {activeSubTab === 'Todo' && (
                                     <>
-                                        {searchResults.users?.map(user => (
-                                            <UserCard
-                                                key={user.id}
-                                                id={user.id}
-                                                username={user.username}
-                                                name={user.name}
-                                                profilePic={user.profilePic}
-                                            />
-                                        ))}
+                                        {searchResults.users
+                                            ?.filter(user => user.id !== profile?.id)
+                                            .map(user => (
+                                                <UserCard
+                                                    key={user.id}
+                                                    id={user.id}
+                                                    username={user.username}
+                                                    name={user.name}
+                                                    profilePic={user.profilePic}
+                                                />
+                                            ))
+                                        }
                                         {searchResults.posts?.map(post => (
-                                            <PostCard key={post.id} {...{
-                                                username: post.author.username,
-                                                name: post.author.name || '',
-                                                profilePic: post.author.profilePic || '',
-                                                content: post.content,
-                                                createdAt: post.createdAt,
-                                                likes: post.likesCount,
-                                                comments: post.commentsCount,
-                                                saved: post.savedCount,
-                                                onDelete: () => {},
-                                                attachedRoutine: post.routine
-                                            }} />
+                                            <PostCard 
+                                                key={post.id}
+                                                authorId={post.author.id}
+                                                username={post.author.username}
+                                                name={post.author.name || ''}
+                                                profilePic={post.author.profilePic || ''}
+                                                content={post.content}
+                                                createdAt={post.createdAt}
+                                                likes={post.likesCount}
+                                                comments={post.commentsCount}
+                                                saved={post.savedCount}
+                                                onDelete={() => {}}
+                                                attachedRoutine={post.routine}
+                                            />
                                         ))}
                                         {searchResults.routines?.map(routine => (
                                             <RoutineCard
@@ -349,18 +355,20 @@ export default function FeedPage() {
                                     </>
                                 )}
                                 {activeSubTab === 'Publicaciones' && searchResults.posts?.map(post => (
-                                    <PostCard key={post.id} {...{
-                                        username: post.author.username,
-                                        name: post.author.name || '',
-                                        profilePic: post.author.profilePic || '',
-                                        content: post.content,
-                                        createdAt: post.createdAt,
-                                        likes: post.likesCount,
-                                        comments: post.commentsCount,
-                                        saved: post.savedCount,
-                                        onDelete: () => {},
-                                        attachedRoutine: post.routine
-                                    }} />
+                                    <PostCard 
+                                        key={post.id}
+                                        authorId={post.author.id}
+                                        username={post.author.username}
+                                        name={post.author.name || ''}
+                                        profilePic={post.author.profilePic || ''}
+                                        content={post.content}
+                                        createdAt={post.createdAt}
+                                        likes={post.likesCount}
+                                        comments={post.commentsCount}
+                                        saved={post.savedCount}
+                                        onDelete={() => {}}
+                                        attachedRoutine={post.routine}
+                                    />
                                 ))}
                                 {activeSubTab === 'Rutinas' && searchResults.routines?.map(routine => (
                                     <RoutineCard
@@ -377,15 +385,18 @@ export default function FeedPage() {
                                         isOwnRoutine={routine.owner.id === profile?.id}
                                     />
                                 ))}
-                                {activeSubTab === 'Usuarios' && searchResults.users?.map(user => (
-                                    <UserCard
-                                        key={user.id}
-                                        id={user.id}
-                                        username={user.username}
-                                        name={user.name}
-                                        profilePic={user.profilePic}
-                                    />
-                                ))}
+                                {activeSubTab === 'Usuarios' && searchResults.users
+                                    ?.filter(user => user.id !== profile?.id)
+                                    .map(user => (
+                                        <UserCard
+                                            key={user.id}
+                                            id={user.id}
+                                            username={user.username}
+                                            name={user.name}
+                                            profilePic={user.profilePic}
+                                        />
+                                    ))
+                                }
                             </div>
                         )}
                     </>

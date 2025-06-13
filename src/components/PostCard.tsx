@@ -5,6 +5,7 @@ import { FaRegCommentDots } from 'react-icons/fa'
 import { FiTrash2 } from 'react-icons/fi'
 import RoutineCard from './RoutineCard'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface RawExercise {
   id: string
@@ -25,6 +26,7 @@ interface Routine {
 }
 
 interface PostCardProps {
+  authorId: number
   username: string
   name: string
   profilePic: string
@@ -38,6 +40,7 @@ interface PostCardProps {
 }
 
 export default function PostCard({
+  authorId,
   username,
   name,
   profilePic,
@@ -49,7 +52,7 @@ export default function PostCard({
   onDelete,
   attachedRoutine,
 }: PostCardProps) {
-
+  const router = useRouter()
   const formatCreatedAt = (createdAt: string): string => {
     const createdDate = new Date(createdAt)
     const now = new Date()
@@ -73,7 +76,16 @@ export default function PostCard({
       <div className="flex items-center mb-3">
         <img src={profilePic} alt="Foto de perfil" className="w-10 h-10 rounded-full mr-3 border border-gray-600" />
         <div>
-          <p className="font-semibold text-white">@{username} ·<span className="text-gray-400 text-sm"> {name}</span></p>
+          <div className="flex justify-center items-center gap-3">
+            <p 
+              className="font-semibold text-white hover:underline cursor-pointer"
+              onClick={() => router.push(`/inicio/perfil/${authorId}`)}
+            >
+              @{username}
+            </p>
+            <p className="text-gray-400 text-sm"> {name}</p>
+          </div>
+          
           <p className="text-gray-400 text-sm">{formatCreatedAt(createdAt)}</p>
         </div>
       </div>
@@ -86,7 +98,7 @@ export default function PostCard({
           description={attachedRoutine.description}
           isPublic={attachedRoutine.isPublic}
           updatedAt={attachedRoutine.updatedAt}
-          owner={typeof attachedRoutine.owner === 'object' ? attachedRoutine.owner.username : attachedRoutine.owner}
+          owner={attachedRoutine.owner}
           exercises={attachedRoutine.exercises}
         />
       )}

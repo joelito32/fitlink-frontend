@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ConfirmarUnfollow from './ConfirmarUnfollow';
 
 interface UserCardProps {
     id: number;
@@ -13,6 +14,7 @@ export default function UserCard({ id, username, name, profilePic, onClick }: Us
     const [isFollowing, setIsFollowing] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [isReady, setIsReady] = useState(false);
+    const [mostrarConfirmarUnfollow, setMostrarConfirmarUnfollow] = useState(false)
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const router = useRouter();
 
@@ -44,21 +46,41 @@ export default function UserCard({ id, username, name, profilePic, onClick }: Us
     }, [id, API_URL, currentUserId, isReady]);
 
     const handleFollowClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation();
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        if (isFollowing) {
+            setMostrarConfirmarUnfollow(true)
+        }  else {
+            try {
+                const res = await fetch(`${API_URL}/api/followers/follow/${id}`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setIsFollowing(true);
+                }
+            } catch (err) {
+                console.error('Error al seguir', err);
+            }
+        }
+    };
+
+    const handleUnfollowConfirm = async () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
         try {
-            const url = `${API_URL}/api/followers/${isFollowing ? 'unfollow' : 'follow'}/${id}`;
-            const res = await fetch(url, {
-                method: isFollowing ? 'DELETE' : 'POST',
+            const res = await fetch(`${API_URL}/api/followers/unfollow/${id}`, {
+                method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
-                setIsFollowing(prev => !prev);
+                setIsFollowing(false);
+                setMostrarConfirmarUnfollow(false);
             }
         } catch (err) {
-            console.error('Error updating follow status', err);
+            console.error('Error al dejar de seguir', err);
         }
     };
 
@@ -82,10 +104,21 @@ export default function UserCard({ id, username, name, profilePic, onClick }: Us
             </div>
             <button 
                 className={`px-4 py-1 rounded-xl text-sm font-medium transition-colors ${isFollowing ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-[#1F7D53] text-white hover:bg-[#186345]'}`}
-                onClick={handleFollowClick}
+                onClick={(e) => {
+                    e.stopPropagation()
+                    handleFollowClick(e)
+                }}
             >
                 {isFollowing ? 'Dejar de seguir' : 'Seguir'}
             </button>
+            {mostrarConfirmarUnfollow && (
+                <div onClick={(e) => e.stopPropagation()}>
+                    <ConfirmarUnfollow 
+                        onCancel={() => setMostrarConfirmarUnfollow(false)}
+                        onConfirm={handleUnfollowConfirm}
+                    />
+                </div>
+            )}
         </div>
     );
 }

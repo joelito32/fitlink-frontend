@@ -62,7 +62,7 @@ export default function MenuRutinas({ onClose, onSelect, myRoutines, savedRoutin
                   description={rutina.description}
                   isPublic={rutina.isPublic}
                   updatedAt={rutina.updatedAt || rutina.createdAt}
-                  owner={typeof rutina.owner === 'object' ? rutina.owner.username : rutina.owner}
+                  owner={rutina.owner}
                   exercises={rutina.exercises}
                 />
               </div>
