@@ -9,6 +9,16 @@ import ConfirmarBorrar from '@/components/ConfirmarBorrar';
 import ProfileMenu from '@/components/ProfileMenu';
 import { IoMdClose } from 'react-icons/io';
 import ConfirmarUnfollow from '@/components/ConfirmarUnfollow';
+import {
+    fetchUserProfile,
+    fetchUserStats,
+    fetchUserRoutines,
+    fetchUserPosts,
+    checkIfFollowing,
+    followUser,
+    unfollowUser,
+    deleteRoutine
+} from '@/lib/api/api';
 
 interface UserProfile {
     id: number;
@@ -23,8 +33,7 @@ interface UserProfile {
 export default function ProfilePage() {
     const { id } = useParams();
     const router = useRouter();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [profile, setProfile] = useState<any>(null);
     const [posts, setPosts] = useState<any[]>([]);
     const [rutinas, setRutinas] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'Publicaciones' | 'Rutinas'>('Publicaciones');
@@ -34,148 +43,73 @@ export default function ProfilePage() {
     const [isFollowing, setIsFollowing] = useState(false)
     const [mostrarConfirmarUnfollow, setMostrarConfirmarUnfollow] = useState(false)
 
-    const fetchStats = async (userId: number, token: string) => {
-        const [followers, following, posts, routines] = await Promise.all([
-            fetch(`${API_URL}/api/followers/followers/count/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/followers/following/count/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/posts/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/routines/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
-        ]);
-        setStats({ publicaciones: posts.length, rutinas: routines.length, seguidores: followers.followers, seguidos: following.following });
-    };
-
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        async function init() {
+            try {
+                const user = await fetchUserProfile(id as string);
+                setProfile(user);
 
-        fetch(`${API_URL}/api/users/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then(res => res.ok ? res.json() : Promise.reject(res))
-            .then(async data => {
-                const profilePic = data.profilePic?.startsWith('http') ? data.profilePic : `${API_URL}${data.profilePic}`;
-                setProfile({ ...data, profilePic });
+                const [statsData, routinesData, postsData, following] = await Promise.all([
+                    fetchUserStats(user.id),
+                    fetchUserRoutines(user.id),
+                    fetchUserPosts(user.id),
+                    checkIfFollowing(id as string)
+                ]);
 
-                await fetchStats(data.id, token);
-
-                const routinesRes = await fetch(`${API_URL}/api/routines/user/${data.id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const routines = await routinesRes.json();
-
-                const rutinasConDatosCompletos = await Promise.all(
-                    routines.map(async (rutina: any) => {
-                        const ejerciciosCompletos = await Promise.all(
-                            rutina.exercises.map(async (e: any) => {
-                                const exRes = await fetch(`${API_URL}/api/exercises/${e.id}`, {
-                                    headers: { Authorization: `Bearer ${token}` }
-                                });
-                                return await exRes.json();
-                            })
-                        );
-                        return { ...rutina, exercises: ejerciciosCompletos };
-                    })
-                );
-                setRutinas(rutinasConDatosCompletos);
-
-                const postsRes = await fetch(`${API_URL}/api/posts/user/${data.id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const rawPosts = await postsRes.json();
-
-                const enriched = await Promise.all(
-                    rawPosts.map(async (post: any) => {
-                        if (post.routine?.exercises) {
-                            post.routine.exercises = await Promise.all(
-                                post.routine.exercises.map(async (ex: { id: string }) => {
-                                    const r = await fetch(`${API_URL}/api/exercises/${ex.id}`, {
-                                        headers: { Authorization: `Bearer ${token}` }
-                                    });
-                                    return await r.json();
-                                })
-                            );
-                        }
-                        return post;
-                    })
-                );
-                setPosts(enriched);
-            })
-            .catch(console.error);
-    }, [id, API_URL]);
+                setStats(statsData);
+                setRutinas(routinesData);
+                setPosts(postsData);
+                setIsFollowing(following);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        init();
+    }, [id]);
 
     const handleEditClick = (rutina: any) => {
         setRutinaEditando(rutina);
     };
 
-    const handleDeleteRoutine = async (id: number) => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        await fetch(`${API_URL}/api/routines/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        setRutinas(prev => prev.filter(r => r.id !== id));
-        setBorrarRutina(null);
+    const handleDeleteRoutine = async (routineId: number) => {
+        try {
+            await deleteRoutine(routineId);
+            setRutinas(prev => prev.filter(r => r.id !== routineId));
+            setBorrarRutina(null);
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     const fetchProfileRoutines = async () => {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_URL}/api/routines/user/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
+        const data = await fetchUserRoutines(profile.id);
         setRutinas(data);
     };
 
-    useEffect(() => {
-
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        fetch(`${API_URL}/api/followers/is-following/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => res.ok ? res.json() : Promise.reject(res))
-            .then(data => setIsFollowing(data.isFollowing))
-            .catch(() => setIsFollowing(false));
-    }, [id, API_URL]);
-
-    const handleFollowClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        const token = localStorage.getItem('token');
-        if (!token || !profile) return;
-
-        if (isFollowing) {
-            setMostrarConfirmarUnfollow(true)
-        }  else {
-            try {
-                const res = await fetch(`${API_URL}/api/followers/follow/${id}`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    setIsFollowing(true);
-                    await fetchStats(profile.id, token)
-                }
-            } catch (err) {
-                console.error('Error al seguir', err);
+    const handleFollowClick = async () => {
+        if (!profile) return;
+        try {
+            if (isFollowing) {
+                setMostrarConfirmarUnfollow(true);
+            } else {
+                await followUser(id as string);
+                setIsFollowing(true);
+                const updatedStats = await fetchUserStats(profile.id);
+                setStats(updatedStats);
             }
+        } catch (err) {
+            console.error('Error al seguir', err);
         }
     };
 
     const handleUnfollowConfirm = async () => {
-        const token = localStorage.getItem('token');
-        if (!token || !profile) return;
-
+        if (!profile) return;
         try {
-            const res = await fetch(`${API_URL}/api/followers/unfollow/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setIsFollowing(false);
-                setMostrarConfirmarUnfollow(false);
-                await fetchStats(profile.id, token);
-            }
+            await unfollowUser(id as string);
+            setIsFollowing(false);
+            setMostrarConfirmarUnfollow(false);
+            const updatedStats = await fetchUserStats(profile.id);
+            setStats(updatedStats);
         } catch (err) {
             console.error('Error al dejar de seguir', err);
         }
@@ -258,20 +192,7 @@ export default function ProfilePage() {
                                         <p className="text-center text-gray-400">El usuario no ha creado ninguna publicación todavía.</p>
                                     ) : (
                                         posts.map((post: any) => (
-                                            <PostCard
-                                                key={post.id}
-                                                authorId={post.authorId}
-                                                username={post.author.username}
-                                                name={post.author.name || ''}
-                                                profilePic={post.author.profilePic || ''}
-                                                content={post.content}
-                                                createdAt={post.createdAt}
-                                                likes={post.likesCount}
-                                                comments={post.commentsCount}
-                                                saved={post.savedCount}
-                                                onDelete={() => {}}
-                                                attachedRoutine={post.routine}
-                                            />
+                                            <PostCard key={post.id} post={post} />
                                         ))
                                     )
                                 ) : rutinas.length === 0 ? (

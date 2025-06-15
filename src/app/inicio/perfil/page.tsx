@@ -8,80 +8,14 @@ import RoutineCard from "@/components/RoutineCard"
 import ConfirmarBorrar from "@/components/ConfirmarBorrar"
 import EditarRutina from "@/components/EditarRutina"
 import PostCard from "@/components/PostCard"
-
-interface UserProfile {
-    id: number
-    username: string
-    name: string
-    birthdate: string
-    bio?: string
-    email?: string
-    profilePic: string
-}
-
-interface RawExercise {
-    id: string
-    name?: string
-}
-
-interface Routine {
-    id: number
-    title: string
-    description: string
-    isPublic: boolean
-    createdAt: string
-    updatedAt: string
-    owner: {
-        id: number
-        username: string
-    }
-    exercises: RawExercise[]
-}
-
-interface RoutineForEdit {
-    id: number
-    title: string
-    description: string
-    isPublic: boolean
-    exercises: FullExercise[]
-}
-
-interface FullExercise {
-    id: string
-    name: string
-    target: string
-    secondaryMuscles: string[]
-    equipment: string
-    bodyPart: string
-    instructions: string
-}
-
-interface Post {
-    id: number
-    author: {
-        id: number
-        username: string
-        name?: string
-        profilePic?: string
-    }
-    content: string
-    createdAt: string
-    likesCount: number
-    commentsCount: number
-    savedCount: number
-    routine?: {
-        id: number
-        title: string
-        description: string
-        isPublic: boolean
-        updatedAt: string
-        owner: {
-            id: number
-            username: string
-        }
-        exercises: { id: string, name?: string }[]
-    }
-}
+import { 
+    fetchCurrentUser,
+    fetchUserStats,
+    fetchUserPosts,
+    fetchUserRoutines,
+    deleteRoutine
+} from "@/lib/api/api"
+import { UserProfile, Routine, RoutineForEdit, Post } from "@/lib/api/types"
 
 export default function PerfilPage() {
     const router = useRouter()
@@ -91,146 +25,51 @@ export default function PerfilPage() {
     const [stats, setStats] = useState({ publicaciones: 0, rutinas: 0, seguidores: 0, seguidos: 0 })
     const [rutinas, setRutinas] = useState<Routine[]>([])
     const [posts, setPosts] = useState<Post[]>([])
-
     const [rutinaEditando, setRutinaEditando] = useState<RoutineForEdit | null>(null)
     const [borrarRutina, setBorrarRutina] = useState<Routine | null>(null)
-    const API_URL = process.env.NEXT_PUBLIC_API_URL
 
-    const fetchProfileRoutines = async () => {
-        const token = localStorage.getItem('token')
-        if (!token) return
+    useEffect(() => {
+        let isMounted = true;
 
-        const res = await fetch(`${API_URL}/api/routines`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        if (!res.ok) return
-
-        const routines = await res.json()
-        const rutinasConDatosCompletos = await Promise.all(
-            routines.map(async (rutina: any) => {
-                const ejerciciosCompletos = await Promise.all(
-                    rutina.exercises.map(async (e: any) => {
-                        const exRes = await fetch(`${API_URL}/api/exercises/${e.id}`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        })
-                        const exData = await exRes.json()
-                        return {
-                            id: exData.id,
-                            name: exData.name,
-                            target: exData.target,
-                            secondaryMuscles: exData.secondaryMuscles || [],
-                            equipment: exData.equipment,
-                            bodyPart: exData.bodyPart,
-                            instructions: exData.instructions || '',
-                            exerciseId: exData.id
-                        }
-                    })
-                )
-                return {
-                    ...rutina,
-                    exercises: ejerciciosCompletos
+        async function init() {
+            try {
+                const user = await fetchCurrentUser();
+                const profilePicUrl = user.profilePic && user.profilePic.startsWith('http') 
+                    ? user.profilePic 
+                    : `${process.env.NEXT_PUBLIC_API_URL}${user.profilePic || ''}`;
+                if (isMounted) {
+                    setProfile({ 
+                        ...user, 
+                        profilePic: profilePicUrl,
+                        name: user.name || '',
+                        birthdate: user.birthdate || '',
+                        email: user.email || ''
+                    });
                 }
-            })
-        )
-        setRutinas(rutinasConDatosCompletos)
-    }
 
-    const fetchStats = async (userId: number, token: string) => {
-        const [followers, following, posts, routines] = await Promise.all([
-            fetch(`${API_URL}/api/followers/followers/count/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/followers/following/count/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/posts/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch(`${API_URL}/api/routines/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
-        ])
-        setStats({ publicaciones: posts.length, rutinas: routines.length, seguidores: followers.followers, seguidos: following.following })
-    }
+                const [statsData, routinesData, postsData] = await Promise.all([
+                    fetchUserStats(user.id),
+                    fetchUserRoutines(user.id),
+                    fetchUserPosts(user.id),
+                ]);
 
-    useEffect(() => {
-        const token = localStorage.getItem('token')
-        if (!token) return
+                setStats(statsData);
+                setRutinas(routinesData.map(r => ({
+                    ...r,
+                    createdAt: r.createdAt || r.updatedAt
+                })));
+                setPosts(postsData);
+            } catch (err) {
+                console.error(err);
+                if (isMounted) router.push('/auth');
+            }
+        }
+        init();
 
-        fetch(`${API_URL}/api/users/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-        .then(res => res.ok ? res.json() : Promise.reject(res))
-        .then(async data => {
-            const profilePic = data.profilePic?.startsWith('http') ? data.profilePic : `${API_URL}${data.profilePic}`
-            setProfile({ ...data, profilePic })
-
-            await fetchStats(data.id, token)
-
-            const routinesRes = await fetch(`${API_URL}/api/routines/user/${data.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-            const routines = await routinesRes.json()
-
-            const rutinasConDatosCompletos = await Promise.all(
-                routines.map(async (rutina: any) => {
-                    const ejerciciosCompletos = await Promise.all(
-                        rutina.exercises.map(async (e: any) => {
-                            const exRes = await fetch(`${API_URL}/api/exercises/${e.id}`, {
-                                headers: { Authorization: `Bearer ${token}` }
-                            })
-                            const exData = await exRes.json()
-                            return {
-                                id: exData.id,
-                                name: exData.name,
-                                target: exData.target,
-                                secondaryMuscles: exData.secondaryMuscles || [],
-                                equipment: exData.equipment,
-                                bodyPart: exData.bodyPart,
-                                instructions: exData.instructions || '',
-                            }
-                        })
-                    )
-                    return {
-                        ...rutina,
-                        exercises: ejerciciosCompletos
-                    }
-                })
-            )
-            setRutinas(rutinasConDatosCompletos)
-        })
-        .catch(console.error)
-    }, [API_URL])
-
-    useEffect(() => {
-        const token = localStorage.getItem('token')
-        if (!token) return
-
-        fetch(`${API_URL}/api/users/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-        .then(res => res.ok ? res.json() : Promise.reject(res))
-        .then(async data => {
-            const profilePic = data.profilePic?.startsWith('http') ? data.profilePic : `${API_URL}${data.profilePic}`
-            setProfile({ ...data, profilePic })
-
-            await fetchStats(data.id, token)
-
-            const postRes = await fetch(`${API_URL}/api/posts/user/${data.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const rawPosts: Post[] = await postRes.json();
-            const enriched = await Promise.all(
-                rawPosts.map(async (post: Post) => {
-                    if (post.routine?.exercises) {
-                        post.routine.exercises = await Promise.all(
-                            post.routine.exercises.map(async (ex: { id: string }) => {
-                                const r = await fetch(`${API_URL}/api/exercises/${ex.id}`, {
-                                    headers: { Authorization: `Bearer ${token}` }
-                                });
-                                return await r.json();
-                            })
-                        );
-                    }
-                    return post;
-                })
-            );
-            return setPosts(enriched);
-        })
-    }, [])
-
+        return () => {
+            isMounted = false
+        }
+    }, []);
     
 
     const handleLogout = () => {
@@ -238,41 +77,44 @@ export default function PerfilPage() {
         router.push('/auth')
     }
 
-    const handleEditClick = async (rutina: Routine) => {
-        const token = localStorage.getItem('token')
-        if (!token) return
-        const ejerciciosCompletos = await Promise.all(
-            rutina.exercises.map(async (e) => {
-                const res = await fetch(`${API_URL}/api/exercises/${e.id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                })
-                const data = await res.json()
-                return {
-                    id: data.id, name: data.name, target: data.target,
-                    secondaryMuscles: data.secondaryMuscles || [],
-                    equipment: data.equipment, bodyPart: data.bodyPart,
-                    instructions: data.instructions || ''
-                }
-            })
-        )
-        setRutinaEditando({
-            id: rutina.id, title: rutina.title,
-            description: rutina.description, isPublic: rutina.isPublic,
-            exercises: ejerciciosCompletos
-        })
-    }
+    const handleEditClick = (rutina: Routine) => {
+        const formatted: RoutineForEdit = {
+            id: rutina.id,
+            title: rutina.title,
+            description: rutina.description,
+            isPublic: rutina.isPublic,
+            exercises: rutina.exercises.map(e => ({
+                id: e.id,
+                name: e.name!,
+                target: (e as any).target,
+                secondaryMuscles: (e as any).secondaryMuscles,
+                equipment: (e as any).equipment,
+                bodyPart: (e as any).bodyPart,
+                instructions: (e as any).instructions,
+            })),
+        };
+        setRutinaEditando(formatted);
+    };
 
     const handleDeleteRoutine = async (id: number) => {
-        const token = localStorage.getItem('token')
-        if (!token || !profile) return
-        await fetch(`${API_URL}/api/routines/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        await fetchProfileRoutines()
-        await fetchStats(profile.id, token)
-        setBorrarRutina(null)
-    }
+        if (!profile) return;
+        try {
+            await deleteRoutine(id);
+            const [statsData, routinesData] = await Promise.all([
+                fetchUserStats(profile.id),
+                fetchUserRoutines(profile.id),
+            ]);
+            setStats(statsData);
+            setRutinas(routinesData.map(r => ({
+                ...r,
+                createdAt: r.createdAt || r.updatedAt
+            })));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setBorrarRutina(null);
+        }
+    };
 
     if (!profile) return null
 
@@ -286,7 +128,13 @@ export default function PerfilPage() {
                             routine={rutinaEditando}
                             onClose={() => setRutinaEditando(null)}
                             onRoutineUpdated={async () => {
-                                await fetchProfileRoutines()
+                                if (profile) {
+                                    const routinesData = await fetchUserRoutines(profile.id)
+                                    setRutinas(routinesData.map(r => ({
+                                        ...r,
+                                        createdAt: r.createdAt || r.updatedAt
+                                    })))
+                                }
                                 setRutinaEditando(null)
                             }}
                         />
@@ -353,20 +201,7 @@ export default function PerfilPage() {
                                         <p className="text-center text-gray-400">No has creado ninguna publicación todavía.</p>
                                     ) : (
                                         posts.map((post: Post) => (
-                                            <PostCard
-                                                key={post.id}
-                                                authorId={post.author.id}
-                                                username={post.author.username}
-                                                name={post.author.name || ''}
-                                                profilePic={post.author.profilePic || ''}
-                                                content={post.content}
-                                                createdAt={post.createdAt}
-                                                likes={post.likesCount}
-                                                comments={post.commentsCount}
-                                                saved={post.savedCount}
-                                                onDelete={() => {}}
-                                                attachedRoutine={post.routine}
-                                            />
+                                            <PostCard key={post.id} post={post} />
                                         ))
                                     )
                                 ) : rutinas.length === 0 ? (
@@ -379,11 +214,12 @@ export default function PerfilPage() {
                                             title={rutina.title}
                                             description={rutina.description}
                                             isPublic={rutina.isPublic}
-                                            updatedAt={rutina.updatedAt || rutina.createdAt}
+                                            updatedAt={rutina.updatedAt}
                                             owner={rutina.owner}
                                             exercises={rutina.exercises}
                                             onEditClick={() => handleEditClick(rutina)}
                                             onDeleteClick={() => setBorrarRutina(rutina)}
+                                            isOwnRoutine={rutina.owner.id === profile.id}
                                         />
                                     ))
                                 )}

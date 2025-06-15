@@ -8,6 +8,10 @@ import { IoIosArrowDown } from 'react-icons/io'
 import ExerciseCard from './ExerciseCard'
 import { IoBookmark, IoBookmarkOutline } from 'react-icons/io5'
 import { useRouter } from 'next/navigation'
+import { 
+  isRoutineSaved,
+  toggleSaveRoutine,
+} from '@/lib/api/api'
 
 interface Exercise {
   id: string
@@ -30,11 +34,10 @@ interface RoutineCardProps {
     username: string
   }
   exercises: Exercise[]
-  isSaved?: boolean
-  onToggleSave?: () => void
   onEditClick?: () => void
   onDeleteClick?: () => void
   isOwnRoutine?: boolean
+  onInteraction?: () => void
 }
 
 export default function RoutineCard({
@@ -47,13 +50,13 @@ export default function RoutineCard({
   exercises,
   onEditClick,
   onDeleteClick,
-  isSaved = false,
-  onToggleSave,
-  isOwnRoutine = false
+  isOwnRoutine = false,
+  onInteraction
 }: RoutineCardProps) {
   const [gifUrls, setGifUrls] = useState<string[]>([])
   const [mostrarDetalles, setMostrarDetalles] = useState(false)
   const router = useRouter()
+  const [isSaved, setIsSaved] = useState(false)
 
   useEffect(() => {
     const fetchGifs = async () => {
@@ -78,6 +81,28 @@ export default function RoutineCard({
 
     fetchGifs()
   }, [exercises])
+
+  useEffect(() => {
+    const fetchSaveState = async () => {
+      try {
+        const saved = await isRoutineSaved(id)
+        setIsSaved(saved)
+      } catch (error) {
+        console.error('Error fetching save state:', error)
+      }
+    }
+    fetchSaveState()
+  }, [id])
+
+  const handleToggleSave = async () => {
+    try {
+      await toggleSaveRoutine(id, isSaved)
+      setIsSaved(!isSaved)
+      onInteraction?.()
+    } catch (err) {
+      console.error('Error al guardar rutina:', err)
+    }
+  }
 
   const formatCreatedAt = (createdAt: string): string => {
     const createdDate = new Date(createdAt)
@@ -104,9 +129,9 @@ export default function RoutineCard({
         )}
         {isPublic ? <FaLockOpen /> : <FaLock />}
       </div>
-      {!isOwnRoutine && onToggleSave && (
+      {!isOwnRoutine && (
         <button
-          onClick={onToggleSave}
+          onClick={handleToggleSave}
           className="absolute bottom-3 right-3 text-xl text-white hover:text-[#1F7D53]"
         >
           {isSaved ? <IoBookmark /> : <IoBookmarkOutline />}
@@ -118,7 +143,7 @@ export default function RoutineCard({
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <p
             className="hover:underline cursor-pointer"
-            onClick={() => router.push(`/perfil/${owner.id}`)}
+            onClick={() => router.push(`perfil/${owner.id}`)}
           >
             @{owner.username}
           </p>

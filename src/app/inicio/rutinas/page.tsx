@@ -6,43 +6,19 @@ import RoutineMenu from '@/components/RoutineMenu'
 import CrearRutina from '@/components/CrearRutina'
 import EditarRutina from '@/components/EditarRutina'
 import ConfirmarBorrar from '@/components/ConfirmarBorrar'
+import {
+  fetchCurrentUserId,
+  fetchUserRoutines,
+  fetchSavedRoutines,
+  deleteRoutine
+} from '@/lib/api/api'
+import { 
+  Routine,
+  RoutineForEdit,
+  FullExercise
+} from '@/lib/api/types'
 
-interface RawExercise {
-  id: string
-  name?: string
-}
 
-interface FullExercise {
-  id: string
-  name: string
-  target: string
-  secondaryMuscles: string[]
-  equipment: string
-  bodyPart: string
-  instructions: string
-}
-
-interface Routine {
-  id: number
-  title: string
-  description: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  owner: {
-    id: number
-    username: string
-  }
-  exercises: RawExercise[]
-}
-
-interface RoutineForEdit {
-  id: number
-  title: string
-  description: string
-  isPublic: boolean
-  exercises: FullExercise[]
-}
 
 export default function RutinasPage() {
   const [rutinas, setRutinas] = useState<Routine[]>([])
@@ -52,120 +28,51 @@ export default function RutinasPage() {
   const [borrarRutina, setBorrarRutina] = useState<Routine | null>(null)
   const [activeTab, setActiveTab] = useState('Mis rutinas')
   const [userId, setUserId] = useState<number | null>(null)
-
-  const fetchUserId = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    if (!res.ok) return
-    const data = await res.json()
-    setUserId(data.id)
-  }
-
-  const fetchRutinas = async (id: number) => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/routines/user/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!res.ok) throw new Error('Error al obtener rutinas')
-      const rutinasCrudas = await res.json()
-      const rutinasConDatosCompletos = await Promise.all(
-        rutinasCrudas.map(async (rutina: any) => {
-          const ejerciciosCompletos = await Promise.all(
-            rutina.exercises.map(async (e: any) => {
-              const exRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              })
-              const exData = await exRes.json()
-              return {
-                id: exData.id,
-                name: exData.name,
-                target: exData.target,
-                secondaryMuscles: exData.secondaryMuscles || [],
-                equipment: exData.equipment,
-                bodyPart: exData.bodyPart,
-                instructions: exData.instructions || ''
-              }
-            })
-          )
-          return {
-            ...rutina,
-            exercises: ejerciciosCompletos
-          }
-        })
-      )
-      setRutinas(rutinasConDatosCompletos)
-    } catch (error) {
-      console.error("Error al cargar rutinas:", error)
-    }
-  }
-
-  const fetchRutinasGuardadas = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/saved-routines`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!res.ok) throw new Error('Error al obtener rutinas guardadas')
-      const rutinasGuardadasCrudas = await res.json()
-      const rutinasCompletas = await Promise.all(
-        rutinasGuardadasCrudas.map(async (rutina: any) => {
-          const ejerciciosCompletos = await Promise.all(
-            rutina.exercises.map(async (e: any) => {
-              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.exerciseId || e.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              })
-              const data = await res.json()
-              return {
-                id: data.id,
-                name: data.name,
-                target: data.target,
-                secondaryMuscles: data.secondaryMuscles || [],
-                equipment: data.equipment,
-                bodyPart: data.bodyPart,
-                instructions: data.instructions || ''
-              }
-            })
-          )
-          return {
-            ...rutina,
-            exercises: ejerciciosCompletos
-          }
-        })
-      )
-      setRutinasGuardadas(rutinasCompletas)
-    } catch (error) {
-      console.error("Error al cargar rutinas guardadas:", error)
-    }
-  }
+  const [reloadTrigger, setReloadTrigger] = useState(0)
 
   useEffect(() => {
     const init = async () => {
-      await fetchUserId()
+      try {
+        const id = await fetchCurrentUserId()
+        setUserId(id)
+      } catch (err) {
+        console.error(err)
+      }
     }
     init()
   }, [])
 
+  const cargarRutinas = async (id: number) => {
+    try {
+      const data = await fetchUserRoutines(id)
+      setRutinas(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarRutinasGuardadas = async () => {
+    try {
+      const data = await fetchSavedRoutines()
+      setRutinasGuardadas(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => {
     if (userId !== null) {
-      fetchRutinas(userId)
-      fetchRutinasGuardadas()
+      cargarRutinas(userId)
+      cargarRutinasGuardadas()
     }
-  }, [userId])
+  }, [userId, reloadTrigger])
 
   const handleEditClick = async (rutina: Routine) => {
     const token = localStorage.getItem('token')
     if (!token) return
 
     try {
-      const ejerciciosCompletos = await Promise.all(
+      const ejerciciosCompletos: FullExercise[] = await Promise.all(
         rutina.exercises.map(async (e) => {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exercises/${e.id}`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -196,18 +103,13 @@ export default function RutinasPage() {
   }
 
   const handleDeleteRoutine = async (id: number) => {
-    const token = localStorage.getItem('token')
-    if (!token || userId === null) return
-
+    if (!userId) return
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/routines/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      fetchRutinas(userId)
+      await deleteRoutine(id)
+      await cargarRutinas(userId)
       setBorrarRutina(null)
-    } catch (error) {
-      console.error("Error al borrar rutina:", error)
+    } catch (err) {
+      console.error('Error al borrar rutina:', err)
     }
   }
 
@@ -224,7 +126,7 @@ export default function RutinasPage() {
           <CrearRutina
             onClose={() => setModoCreacion(false)}
             onRoutineCreated={() => {
-              if (userId !== null) fetchRutinas(userId)
+              if (userId !== null) cargarRutinas(userId)
               setModoCreacion(false)
             }}
           />
@@ -233,7 +135,7 @@ export default function RutinasPage() {
             routine={rutinaEditando}
             onClose={() => setRutinaEditando(null)}
             onRoutineUpdated={() => {
-              if (userId !== null) fetchRutinas(userId)
+              if (userId !== null) cargarRutinas(userId)
               setRutinaEditando(null)
             }}
           />
@@ -264,11 +166,13 @@ export default function RutinasPage() {
                     title={rutina.title}
                     description={rutina.description}
                     isPublic={rutina.isPublic}
-                    updatedAt={rutina.updatedAt || rutina.createdAt}
+                    updatedAt={rutina.updatedAt}
                     owner={rutina.owner}
                     exercises={rutina.exercises}
+                    isOwnRoutine={rutina.owner.id === userId}
                     onEditClick={() => handleEditClick(rutina)}
                     onDeleteClick={() => setBorrarRutina(rutina)}
+                    onInteraction={() => setReloadTrigger(prev => prev + 1)}
                   />
                 ))
               )}
